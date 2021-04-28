@@ -2,10 +2,16 @@ import axios from 'axios'
 
 const weatherAppId = '4ef94411c88af639e42262a773805c7e'
 
-const getWeatherAPI = (city) => {
+const getWeatherAPIWithLocation = (location) => {
   return axios.get(
-    `http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${weatherAppId}&units=metric`
+    `http://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${weatherAppId}&units=metric`
   )
 }
 
-export { getWeatherAPI }
+const getWeatherAPIWithGeocode = (lat, lon) => {
+  return axios.get(
+    `http://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${weatherAppId}&units=metric`
+  )
+}
+
+export { getWeatherAPIWithLocation, getWeatherAPIWithGeocode }

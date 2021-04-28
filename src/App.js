@@ -8,25 +8,33 @@ import {
   Button,
   TextField,
 } from '@material-ui/core'
-
+import { geolocated } from 'react-geolocated'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
-import { getWeatherAPI } from './helpers/apis/weather'
+import {
+  getWeatherAPIWithLocation,
+  getWeatherAPIWithGeocode,
+} from './helpers/apis/weather'
 import WeatherCard from './components/WeatherCard'
 import './App.css'
 
-function App() {
+const App = ({ isGeolocationAvailable, isGeolocationEnabled, coords }) => {
   const [weatherData, setWeatherData] = useState()
   const [openModal, setOpenModal] = useState(false)
   const [location, setLocation] = useState('')
   const [locationError, setLocationError] = useState(false)
+  const [getWeatherDataBy, setGetWeatherDataBy] = useState()
 
-  const getWeatherData = async (location) => {
+  const getWeatherData = async () => {
     setLocationError(false)
-
     try {
-      const res = await getWeatherAPI(location)
+      let res
+      if (getWeatherDataBy === 'location') {
+        res = await getWeatherAPIWithLocation(location)
+      } else if (getWeatherDataBy === 'geocode') {
+        res = await getWeatherAPIWithGeocode(coords.latitude, coords.longitude)
+      }
 
       setWeatherData(res.data)
       setOpenModal(false)
@@ -51,13 +59,23 @@ function App() {
   }
 
   const onFormSubmit = () => {
-    getWeatherData(location)
+    setGetWeatherDataBy('location')
   }
+
+  const onSelectCurrentLocation = () => {
+    setGetWeatherDataBy('geocode')
+  }
+
+  useEffect(() => {
+    if (getWeatherDataBy) {
+      getWeatherData()
+    }
+  }, [getWeatherDataBy])
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (weatherData) {
-        getWeatherData(weatherData.name)
+        getWeatherData()
       }
     }, 1000 * 60 * 60)
     return () => clearInterval(interval)
@@ -77,6 +95,8 @@ function App() {
         open={openModal}
         onClose={handleClose}
         aria-labelledby='form-location'
+        fullWidth
+        maxWidth='sm'
       >
         <DialogTitle id='form-location-title'>Your location</DialogTitle>
         <DialogContent>
@@ -93,11 +113,21 @@ function App() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color='primary'>
-            Cancel
+          <Button onClick={onFormSubmit} color='primary' variant='contained'>
+            Submit Location
           </Button>
-          <Button onClick={onFormSubmit} color='primary'>
-            Submit
+          {coords && (
+            <Button
+              onClick={onSelectCurrentLocation}
+              color='primary'
+              variant='contained'
+            >
+              Use Current Location
+            </Button>
+          )}
+
+          <Button onClick={handleClose} color='secondary' variant='contained'>
+            Cancel
           </Button>
         </DialogActions>
       </Dialog>
@@ -106,4 +136,9 @@ function App() {
   )
 }
 
-export default App
+export default geolocated({
+  positionOptions: {
+    enableHighAccuracy: false,
+  },
+  userDecisionTimeout: 5000,
+})(App)
